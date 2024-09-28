@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OSM 15 Puzzle</title>
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #4f4444;
+}
+
+#board {
+  position: absolute;
+  transform-origin: 0 0;
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  background-color: #fff;
+  box-shadow:
+    inset 8px 8px 16px #fff4,
+    inset -8px -8px 16px #0004,
+    inset 2px 2px 4px #fffc,
+    inset -2px -2px 4px #000c,
+    4px 4px 4px #000;
+  border-radius: 16px;
+  transition:
+    left 0.1s ease-out,
+    top 0.1s ease-out;
+}
+</style>
+</head>
+<body>
+<div id="board"></div>
+</body>
+<script>
+
+const BOARD_PADDING  = 24;   // in pixels
+const TILE_WIDTH     = 256;  // in pixels
+const TILE_SPACING   = 8;    // in pixels
+const TILES_PER_SIDE = 4;
+
+const MAPS = {
+  world    : { z0:  2, x0:     0, y0:      0, space: 'SE', title: 'World' },
+  europe   : { z0:  5, x0:    15, y0:      9, space: 'NE', title: 'Europe' },
+  asean    : { z0:  5, x0:    24, y0:     13, space: 'NE', title: 'Southeast Asia' },
+  tasmania : { z0:  8, x0:   230, y0:    159, space: 'SW', title: 'Tasmania' },
+  //korea    : {},
+  //aegean   : {},
+  //ireland  : {},
+  //lesotho  : {},
+  //hawaii   : {},
+  schiphol : { z0: 14, x0:  8407, y0:   5387, space: 'SE', title: 'Schiphol' },
+  paris    : { z0: 15, x0: 16596, y0:  11271, space: 'NW', title: 'Paris' },
+  //frisco   : {},
+  //london   : {},
+  //rio      : {},
+  //barcelona: {},
+  //shibuya  : {},
+  //haneda   : {},
+  //stpeters : {},
+  pentagon : { z0: 18, x0: 74960, y0: 100305, space: 'SE', title: 'Pentagon' },
+  //moma     : {},
+};
+
+const TileDivs = [];
+const BoardState = [];
+const SpaceState = {};
+
+const initApp = () => {
+
+  const BoardDiv = document.getElementById('board');
+
+  // Compute viewport and board sizes
+  const boardWidth = (TILE_WIDTH * TILES_PER_SIDE) + (TILE_SPACING * (TILES_PER_SIDE - 1) + (BOARD_PADDING * 2));
+  BoardDiv.style.width = boardWidth + 'px';
+  BoardDiv.style.height = boardWidth + 'px';
+  if (window.innerWidth > window.innerHeight) {
+    BoardDiv.style.top = 0;
+    BoardDiv.style.left = ((window.innerWidth - window.innerHeight) / 2) + 'px';
+    BoardDiv.style.transform = `scale(${window.innerHeight / boardWidth})`;
+  }
+  else {
+    BoardDiv.style.left = 0;
+    BoardDiv.style.top = ((window.innerHeight - window.innerWidth) / 2) + 'px';
+    BoardDiv.style.transform = `scale(${window.innerWidth / boardWidth})`;
+  }
+
+  // Determine map
+  const mapIds = Object.keys(MAPS);
+  const map = MAPS[mapIds[Math.floor(Math.random() * mapIds.length)]];
+
+  // Generate tiles
+  for   (let x = 0; x < TILES_PER_SIDE; x++) {
+    BoardState[x] = [];
+    for (let y = 0; y < TILES_PER_SIDE; y++) {
+
+      const spaceTest = `${x}/${y}/${map.space}`;
+      if (['0/0/NW', '3/0/NE', '0/3/SW', '3/3/SE'].includes(spaceTest)) {
+        Object.entries({
+          currX: x,
+          currY: y,
+        }).forEach(([key, value]) => {
+          SpaceState[key] = value;
+        });
+        continue;
+      }
+
+      const tile = document.createElement('div');
+      tile._origX = x;
+      tile._origY = y;
+      tile._currX = x;
+      tile._currY = y;
+      tile.className = 'tile';
+      tile.style.backgroundImage = `url(https://tile.openstreetmap.org/${map.z0}/${map.x0 + x}/${map.y0 + y}.png)`;
+      tile.style.left = (BOARD_PADDING + (TILE_WIDTH + TILE_SPACING) * x) + 'px';
+      tile.style.top  = (BOARD_PADDING + (TILE_WIDTH + TILE_SPACING) * y) + 'px';
+
+      tile.onclick = handleTileClick;
+
+      BoardDiv.appendChild(tile);
+      TileDivs.push(tile);
+
+      BoardState[x][y] = tile;
+    }
+  }
+
+  scramble();
+};
+
+const scramble = () => {
+
+  let iX = SpaceState.currX;
+  let iY = SpaceState.currY;
+  const positions = [];
+
+  for (let i = 0; i < 500; i++) {
+
+    const candidatePositions = [];
+    if (iX > 0)                  candidatePositions.push([iX - 1, iY]);
+    if (iX < TILES_PER_SIDE - 1) candidatePositions.push([iX + 1, iY]);
+    if (iY > 0)                  candidatePositions.push([iX, iY - 1]);
+    if (iY < TILES_PER_SIDE - 1) candidatePositions.push([iX, iY + 1]);
+
+    const position = candidatePositions[Math.floor(Math.random() * candidatePositions.length)];
+    positions.push(position);
+
+    iX = position[0];
+    iY = position[1];
+  }
+
+  positions.forEach(position => { swapTileWithSpace(...position) })
+};
+
+const swapTileWithSpace = (x, y) => {
+
+  let tile = BoardState[x][y]
+  BoardState[SpaceState.currX][SpaceState.currY] = tile;
+  BoardState[x][y] = null;
+  [SpaceState.currX, tile._currX] = [tile._currX, SpaceState.currX];
+  [SpaceState.currY, tile._currY] = [tile._currY, SpaceState.currY];
+
+  tile.style.left = (BOARD_PADDING + (TILE_WIDTH + TILE_SPACING) * tile._currX) + 'px';
+  tile.style.top  = (BOARD_PADDING + (TILE_WIDTH + TILE_SPACING) * tile._currY) + 'px';
+};
+
+const handleKeydown = (evt) => {
+
+  // Ignore non-arrow keys
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) return;
+
+  // If space is at an edge and can't move opposite the pressed arrow key
+  if (
+    evt.code === 'ArrowLeft'  && SpaceState.currX === TILES_PER_SIDE - 1 ||
+    evt.code === 'ArrowRight' && SpaceState.currX === 0                  ||
+    evt.code === 'ArrowUp'    && SpaceState.currY === TILES_PER_SIDE - 1 ||
+    evt.code === 'ArrowDown'  && SpaceState.currY === 0
+  ) return;
+
+  let tileX, tileY;
+  switch (evt.code) {
+    case 'ArrowLeft':
+      tileX = SpaceState.currX + 1;
+      tileY = SpaceState.currY;
+      break;
+    case 'ArrowRight':
+      tileX = SpaceState.currX - 1;
+      tileY = SpaceState.currY;
+      break;
+    case 'ArrowUp':
+      tileX = SpaceState.currX;
+      tileY = SpaceState.currY + 1;
+      break;
+    case 'ArrowDown':
+      tileX = SpaceState.currX;
+      tileY = SpaceState.currY - 1;
+      break;
+  }
+
+  swapTileWithSpace(tileX, tileY);
+
+  setTimeout(checkWin, 100);
+};
+
+const handleTileClick = (evt) => {
+
+  tile = evt.currentTarget;
+
+  // Ignore clicks on tiles that are not on the same row or column as the space
+  if (tile._currX !== SpaceState.currX && tile._currY !== SpaceState.currY) return;
+
+  // Collect all positions between the space and the clicked tile
+  const positions = [];
+  const δx = Math.sign(tile._currX - SpaceState.currX);
+  const δy = Math.sign(tile._currY - SpaceState.currY);
+  let iX = SpaceState.currX;
+  let iY = SpaceState.currY;
+  do {
+    iX += δx;
+    iY += δy;
+    positions.push([iX, iY]);
+  } while (iX !== tile._currX || iY !== tile._currY);
+
+  positions.forEach(position => { swapTileWithSpace(...position) })
+
+  setTimeout(checkWin, 100);
+};
+
+const checkWin = () => {
+  const diff = TileDivs.reduce((acc, cur) => acc + (cur._currX === cur._origX ? 0 : 1) + (cur._currY === cur._origY ? 0 : 1), 0);
+  if (diff === 0) console.log('WIN');
+};
+
+window.onload = initApp;
+document.onkeydown = handleKeydown;
+
+</script>
+</html>
