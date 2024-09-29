@@ -233,11 +233,18 @@ const handleTileClick = (evt) => {
 
 const checkWin = () => {
   const diff = TileDivs.reduce((acc, cur) => acc + (cur._currX === cur._origX ? 0 : 1) + (cur._currY === cur._origY ? 0 : 1), 0);
-  if (diff === 0) console.log('WIN');
+  if (diff === 0) {
+    confetti({
+      particleCount: 500,
+      spread: 360,
+      scalar: 1.5,
+    });
+  }
 };
 
 window.onload = initApp;
 document.onkeydown = handleKeydown;
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
 </html>
