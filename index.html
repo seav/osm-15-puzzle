@@ -343,6 +343,7 @@ const populateMapList = () => {
 
 const generateMap = (mapId = 'world') => {
 
+  TileDivs.length = 0
   BoardDiv.innerHTML = '';
 
   window.location.hash = `#${mapId}`;
@@ -355,12 +356,8 @@ const generateMap = (mapId = 'world') => {
 
       const spaceTest = `${x}/${y}/${map.space}`;
       if (['0/0/NW', '3/0/NE', '0/3/SW', '3/3/SE'].includes(spaceTest)) {
-        Object.entries({
-          currX: x,
-          currY: y,
-        }).forEach(([key, value]) => {
-          SpaceState[key] = value;
-        });
+        SpaceState.currX = x;
+        SpaceState.currY = y;
         continue;
       }
 
