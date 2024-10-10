@@ -69,10 +69,12 @@ a {
   transition:
     left 0.1s ease-out,
     top  0.1s ease-out;
+  cursor: pointer;
 }
 
 .button {
   width: 100px;
+  cursor: pointer;
 }
 
 #map-button {
@@ -110,28 +112,28 @@ a {
   font-weight: bold;
 }
 
-#map-dialog,
-#help-dialog,
+.dialog,
 #close-button {
   transition:
     left 0.25s ease-out,
     top  0.25s ease-out;
+}
+
+.dialog {
+  font-size: 48px;
   background-color: #4f4444;
 }
 
-.landscape #map-dialog,
-.landscape #help-dialog {
+.landscape .dialog {
   top: -1096px;
   left: 0;
 }
-.portrait #map-dialog,
-.portrait #help-dialog {
+.portrait .dialog {
   top: 0;
   left: -1096px;
 }
 
-#map-dialog.visible,
-#help-dialog.visible {
+.dialog.visible {
   top: 0;
   left: 0;
 }
@@ -150,25 +152,55 @@ a {
   left: 24px;
 }
 
+.dialog strong {
+  font-size: 72px;
+}
+
+.dialog p {
+  margin: 24px 0 0 0;
+}
+
+#map-dialog {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+#map-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+#map-list div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  margin: 8px;
+  padding: 16px;
+  width: 256px;
+  height: 128px;
+  border-radius: 16px;
+  font-size: 56px;
+  line-height: 48px;
+  background-color: #fea2;
+  cursor: pointer;
+}
+
 #help-dialog {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 48px;
   text-align: center;
 }
 
 #help-dialog > * {
   width: 1048px;
-}
-
-#help-dialog strong {
-  font-size: 72px;
-}
-
-#help-dialog p {
-  margin: 24px 0 0 0;
 }
 
 .created {
@@ -182,7 +214,11 @@ a {
   <img id="help-button" class="button" src="icon-help.svg">
   <div id="board"></div>
   <div id="attrib">Map tiles © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></div>
-  <div id="help-dialog">
+  <div id="map-dialog" class="dialog">
+    <strong>Choose Map</strong>
+    <div id="map-list"></div>
+  </div>
+  <div id="help-dialog" class="dialog">
     <strong>OSM 15 Puzzle</strong>
     <p>
       This is the classic <a href="https://en.wikipedia.org/wiki/15_puzzle">15 puzzle</a> game using standard OpenStreetMap tiles.<br>
@@ -229,73 +265,41 @@ const MAPS = {
   stpeters : { z0: 19, x0: 280279, y0: 194814, space: 'NE', title: 'St. Peter’s Basilica' },
 };
 
-let AppDiv, BoardDiv, HelpButton, HelpDialog, CloseButton;
+let AppDiv, BoardDiv, MapButton, HelpButton, MapDialog, MapList, HelpDialog, CloseButton;
 const TileDivs = [];
 const BoardState = [];
 const SpaceState = {};
+
+let IsPlaying = false;
 
 const initApp = () => {
 
   AppDiv      = document.getElementById('app');
   BoardDiv    = document.getElementById('board');
+  MapButton   = document.getElementById('map-button');
   HelpButton  = document.getElementById('help-button');
+  MapDialog   = document.getElementById('map-dialog');
+  MapList     = document.getElementById('map-list');
   HelpDialog  = document.getElementById('help-dialog');
   CloseButton = document.getElementById('close-button');
+
+  MapButton.onclick = () => {
+    MapDialog  .classList.add('visible');
+    CloseButton.classList.add('visible');
+  };
 
   HelpButton.onclick = () => {
     HelpDialog .classList.add('visible');
     CloseButton.classList.add('visible');
   };
 
-  CloseButton.onclick = () => {
-    HelpDialog .classList.remove('visible');
-    CloseButton.classList.remove('visible');
-  };
-
-  document.get
+  CloseButton.onclick = closeDialogs;
 
   relayoutApp();
 
-  // Determine map
-  const mapIds = Object.keys(MAPS);
-  const map = MAPS[mapIds[Math.floor(Math.random() * mapIds.length)]];
+  populateMapList();
 
-  // Generate tiles
-  for   (let x = 0; x < TILES_PER_SIDE; x++) {
-    BoardState[x] = [];
-    for (let y = 0; y < TILES_PER_SIDE; y++) {
-
-      const spaceTest = `${x}/${y}/${map.space}`;
-      if (['0/0/NW', '3/0/NE', '0/3/SW', '3/3/SE'].includes(spaceTest)) {
-        Object.entries({
-          currX: x,
-          currY: y,
-        }).forEach(([key, value]) => {
-          SpaceState[key] = value;
-        });
-        continue;
-      }
-
-      const tile = document.createElement('div');
-      tile._origX = x;
-      tile._origY = y;
-      tile._currX = x;
-      tile._currY = y;
-      tile.className = 'tile';
-      tile.style.backgroundImage = `url(https://tile.openstreetmap.org/${map.z0}/${map.x0 + x}/${map.y0 + y}.png)`;
-      tile.style.left = ((TILE_WIDTH + TILE_SPACING) * x) + 'px';
-      tile.style.top  = ((TILE_WIDTH + TILE_SPACING) * y) + 'px';
-
-      tile.onclick = handleTileClick;
-
-      BoardDiv.appendChild(tile);
-      TileDivs.push(tile);
-
-      BoardState[x][y] = tile;
-    }
-  }
-
-  scramble();
+  generateMap(window.location.hash.substr(1));
 };
 
 const relayoutApp = () => {
@@ -320,7 +324,65 @@ const relayoutApp = () => {
     AppDiv.style.top = ((window.innerHeight - appLength * scale) / 2) + 'px';
     AppDiv.style.left = 0;
   }
+};
 
+const populateMapList = () => {
+  Object.keys(MAPS).forEach(mapId => {
+    const map = document.createElement('div');
+    map.innerHTML = `<span>${MAPS[mapId].title}</span>`;
+    map.onclick = () => {
+      generateMap(mapId);
+      closeDialogs();
+    };
+    MapList.appendChild(map);
+  });
+};
+
+const generateMap = (mapId = 'world') => {
+
+  BoardDiv.innerHTML = '';
+
+  window.location.hash = `#${mapId}`;
+
+  const map = MAPS[mapId];
+
+  for (let x = 0; x < TILES_PER_SIDE; x++) {
+    BoardState[x] = [];
+    for (let y = 0; y < TILES_PER_SIDE; y++) {
+
+      const spaceTest = `${x}/${y}/${map.space}`;
+      if (['0/0/NW', '3/0/NE', '0/3/SW', '3/3/SE'].includes(spaceTest)) {
+        Object.entries({
+          currX: x,
+          currY: y,
+        }).forEach(([key, value]) => {
+          SpaceState[key] = value;
+        });
+        continue;
+      }
+
+      const tile = document.createElement('div');
+      tile._origX = x;
+      tile._origY = y;
+      tile._currX = x;
+      tile._currY = y;
+      tile.classList.add('tile');
+      tile.style.backgroundImage = `url(https://tile.openstreetmap.org/${map.z0}/${map.x0 + x}/${map.y0 + y}.png)`;
+      tile.style.left = ((TILE_WIDTH + TILE_SPACING) * x) + 'px';
+      tile.style.top  = ((TILE_WIDTH + TILE_SPACING) * y) + 'px';
+
+      tile.onclick = handleTileClick;
+
+      BoardDiv.appendChild(tile);
+      TileDivs.push(tile);
+
+      BoardState[x][y] = tile;
+    }
+  }
+
+  scramble();
+
+  IsPlaying = true;
 };
 
 const scramble = () => {
@@ -361,6 +423,8 @@ const swapTileWithSpace = (x, y) => {
 
 const handleKeydown = (evt) => {
 
+  if (!IsPlaying && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) return;
+
   // If space is at an edge and can't move opposite the pressed arrow key
   if (
     evt.code === 'ArrowLeft'  && SpaceState.currX === TILES_PER_SIDE - 1 ||
@@ -388,8 +452,9 @@ const handleKeydown = (evt) => {
       tileY = SpaceState.currY - 1;
       break;
     case 'Escape':
-      HelpDialog .classList.remove('visible');
-      CloseButton.classList.remove('visible');
+      closeDialogs();
+      return;
+    default:
       return;
   }
 
@@ -399,6 +464,8 @@ const handleKeydown = (evt) => {
 };
 
 const handleTileClick = (evt) => {
+
+  if (!IsPlaying) return;
 
   tile = evt.currentTarget;
 
@@ -425,12 +492,21 @@ const handleTileClick = (evt) => {
 const checkWin = () => {
   const diff = TileDivs.reduce((acc, cur) => acc + (cur._currX === cur._origX ? 0 : 1) + (cur._currY === cur._origY ? 0 : 1), 0);
   if (diff === 0) {
+
     confetti({
       particleCount: 500,
       spread: 360,
       scalar: 1.5,
     });
+
+    IsPlaying = false;
   }
+};
+
+const closeDialogs = () => {
+  MapDialog  .classList.remove('visible');
+  HelpDialog .classList.remove('visible');
+  CloseButton.classList.remove('visible');
 };
 
 window.onload = initApp;
