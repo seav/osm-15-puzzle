@@ -299,7 +299,8 @@ const initApp = () => {
 
   populateMapList();
 
-  generateMap(window.location.hash.substr(1));
+  const hash = window.location.hash.replace('#', '')
+  generateMap(hash || undefined);
 };
 
 const relayoutApp = () => {
