@@ -284,11 +284,13 @@ const initApp = () => {
   CloseButton = document.getElementById('close-button');
 
   MapButton.onclick = () => {
+    IsPlaying = false;
     MapDialog  .classList.add('visible');
     CloseButton.classList.add('visible');
   };
 
   HelpButton.onclick = () => {
+    IsPlaying = false;
     HelpDialog .classList.add('visible');
     CloseButton.classList.add('visible');
   };
@@ -508,6 +510,7 @@ const closeDialogs = () => {
   MapDialog  .classList.remove('visible');
   HelpDialog .classList.remove('visible');
   CloseButton.classList.remove('visible');
+  IsPlaying = true;
 };
 
 window.onload = initApp;
