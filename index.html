@@ -14,14 +14,64 @@ html, body {
 body {
   background-color: #4f4444;
   font-family: "Amatic SC";
+  color: #fea;
+}
+
+a {
+  color: #fea;
+}
+
+#app, #board, .tile, .button, #attrib, #map-dialog, #help-dialog {
+  position: absolute;
 }
 
 #app {
-  position: absolute;
+  transform-origin: 0 0;
+}
+
+.landscape #app,
+.landscape #map-dialog,
+.landscape #help-dialog {
+  width: 1268px;
+  height: 1096px;
+}
+.portrait #app,
+.portrait #map-dialog,
+.portrait #help-dialog {
+  width: 1096px;
+  height: 1268px;
+}
+
+#board {
+  width: 1048px;
+  height: 1048px;
+}
+.landscape #board {
+  top: 24px;
+  left: 148px;
+}
+.portrait #board {
+  top: 148px;
+  left: 24px;
+}
+
+.tile {
+  width: 256px;
+  height: 256px;
+  background-color: #fff;
+  box-shadow:
+    inset 8px 8px 16px #fff4,
+    inset -8px -8px 16px #0004,
+    inset 2px 2px 4px #fffc,
+    inset -2px -2px 4px #000c,
+    4px 4px 4px #000;
+  border-radius: 16px;
+  transition:
+    left 0.1s ease-out,
+    top  0.1s ease-out;
 }
 
 .button {
-  position: absolute;
   width: 100px;
 }
 
@@ -38,37 +88,7 @@ body {
   left: 972px;
 }
 
-#board {
-  position: absolute;
-}
-.landscape #board {
-  top: 24px;
-  left: 148px;
-}
-.portrait #board {
-  top: 148px;
-  left: 24px;
-}
-
-.tile {
-  position: absolute;
-  width: 256px;
-  height: 256px;
-  background-color: #fff;
-  box-shadow:
-    inset 8px 8px 16px #fff4,
-    inset -8px -8px 16px #0004,
-    inset 2px 2px 4px #fffc,
-    inset -2px -2px 4px #000c,
-    4px 4px 4px #000;
-  border-radius: 16px;
-  transition:
-    left 0.1s ease-out,
-    top 0.1s ease-out;
-}
-
 #attrib {
-  position: absolute;
   width: 1048px;
   height: 24px;
   font-size: 24px;
@@ -88,17 +108,93 @@ body {
 
 #attrib, #attrib a {
   font-weight: bold;
-  color: #fea;
 }
 
+#map-dialog,
+#help-dialog,
+#close-button {
+  transition:
+    left 0.25s ease-out,
+    top  0.25s ease-out;
+  background-color: #4f4444;
+}
+
+.landscape #map-dialog,
+.landscape #help-dialog {
+  top: -1096px;
+  left: 0;
+}
+.portrait #map-dialog,
+.portrait #help-dialog {
+  top: 0;
+  left: -1096px;
+}
+
+#map-dialog.visible,
+#help-dialog.visible {
+  top: 0;
+  left: 0;
+}
+
+.landscape #close-button {
+  top: -124px;
+  left: 24px;
+}
+.portrait #close-button {
+  top: 24px;
+  left: -124px;
+}
+
+#close-button.visible {
+  top: 24px;
+  left: 24px;
+}
+
+#help-dialog {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 48px;
+  text-align: center;
+}
+
+#help-dialog > * {
+  width: 1048px;
+}
+
+#help-dialog strong {
+  font-size: 72px;
+}
+
+#help-dialog p {
+  margin: 24px 0 0 0;
+}
+
+.created {
+  font-size: 32px;
+}
 </style>
 </head>
 <body>
 <div id="app">
-  <img id="map-button"  class="button" src="icon-map.svg" />
-  <img id="help-button" class="button" src="icon-help.svg" />
+  <img id="map-button"  class="button" src="icon-map.svg">
+  <img id="help-button" class="button" src="icon-help.svg">
   <div id="board"></div>
   <div id="attrib">Map tiles © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></div>
+  <div id="help-dialog">
+    <strong>OSM 15 Puzzle</strong>
+    <p>
+      This is the classic <a href="https://en.wikipedia.org/wiki/15_puzzle">15 puzzle</a> game using standard OpenStreetMap tiles.<br>
+      Solve the puzzle by sliding the pieces to create the original map image.
+    </p>
+    <p>Move pieces by clicking or tapping on them.<br>If you have a keyboard, you may also use the arrow keys.</p>
+    <p class="created">
+      Created by <a href="https://en.osm.town/@seav">Eugene Alvin Villar</a> •
+      <a href="https://github.com/seav/osm-15-puzzle">Source code in GitHub</a>
+    </p>
+  </div>
+  <img id="close-button" class="button" src="icon-close.svg">
 </div>
 </body>
 <script>
@@ -133,15 +229,30 @@ const MAPS = {
   stpeters : { z0: 19, x0: 280279, y0: 194814, space: 'NE', title: 'St. Peter’s Basilica' },
 };
 
-let AppDiv, BoardDiv;
+let AppDiv, BoardDiv, HelpButton, HelpDialog, CloseButton;
 const TileDivs = [];
 const BoardState = [];
 const SpaceState = {};
 
 const initApp = () => {
 
-  AppDiv   = document.getElementById('app');
-  BoardDiv = document.getElementById('board');
+  AppDiv      = document.getElementById('app');
+  BoardDiv    = document.getElementById('board');
+  HelpButton  = document.getElementById('help-button');
+  HelpDialog  = document.getElementById('help-dialog');
+  CloseButton = document.getElementById('close-button');
+
+  HelpButton.onclick = () => {
+    HelpDialog .classList.add('visible');
+    CloseButton.classList.add('visible');
+  };
+
+  CloseButton.onclick = () => {
+    HelpDialog .classList.remove('visible');
+    CloseButton.classList.remove('visible');
+  };
+
+  document.get
 
   relayoutApp();
 
@@ -191,12 +302,9 @@ const relayoutApp = () => {
 
   const isLandscape = window.innerWidth > window.innerHeight;
 
-  AppDiv.classList.add(isLandscape ? 'landscape' : 'portrait');
+  document.body.classList.add(isLandscape ? 'landscape' : 'portrait');
 
   const boardWidth = (TILE_WIDTH * TILES_PER_SIDE) + (TILE_SPACING * (TILES_PER_SIDE - 1));
-  BoardDiv.style.width = boardWidth + 'px';
-  BoardDiv.style.height = boardWidth + 'px';
-
   const appLength = boardWidth + ICON_SIZE + ATTRIB_HEIGHT + (PADDING * 4);
   const appBreadth = boardWidth + (PADDING * 2);
 
@@ -253,9 +361,6 @@ const swapTileWithSpace = (x, y) => {
 
 const handleKeydown = (evt) => {
 
-  // Ignore non-arrow keys
-  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) return;
-
   // If space is at an edge and can't move opposite the pressed arrow key
   if (
     evt.code === 'ArrowLeft'  && SpaceState.currX === TILES_PER_SIDE - 1 ||
@@ -282,6 +387,10 @@ const handleKeydown = (evt) => {
       tileX = SpaceState.currX;
       tileY = SpaceState.currY - 1;
       break;
+    case 'Escape':
+      HelpDialog .classList.remove('visible');
+      CloseButton.classList.remove('visible');
+      return;
   }
 
   swapTileWithSpace(tileX, tileY);
