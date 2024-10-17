@@ -270,7 +270,8 @@ const TileDivs = [];
 const BoardState = [];
 const SpaceState = {};
 
-let IsPlaying = false;
+let IsSolved = false;
+let CanMove = false;
 
 const initApp = () => {
 
@@ -284,13 +285,13 @@ const initApp = () => {
   CloseButton = document.getElementById('close-button');
 
   MapButton.onclick = () => {
-    IsPlaying = false;
+    CanMove = false;
     MapDialog  .classList.add('visible');
     CloseButton.classList.add('visible');
   };
 
   HelpButton.onclick = () => {
-    IsPlaying = false;
+    CanMove = false;
     HelpDialog .classList.add('visible');
     CloseButton.classList.add('visible');
   };
@@ -382,7 +383,8 @@ const generateMap = (mapId = 'world') => {
 
   scramble();
 
-  IsPlaying = true;
+  IsSolved = false;
+  CanMove = true;
 };
 
 const scramble = () => {
@@ -391,7 +393,7 @@ const scramble = () => {
   let iY = SpaceState.currY;
   const positions = [];
 
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 2; i++) {
 
     const candidatePositions = [];
     if (iX > 0)                  candidatePositions.push([iX - 1, iY]);
@@ -423,7 +425,7 @@ const swapTileWithSpace = (x, y) => {
 
 const handleKeydown = (evt) => {
 
-  if (!IsPlaying && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) return;
+  if (!CanMove && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(evt.code)) return;
 
   // If space is at an edge and can't move opposite the pressed arrow key
   if (
@@ -465,7 +467,7 @@ const handleKeydown = (evt) => {
 
 const handleTileClick = (evt) => {
 
-  if (!IsPlaying) return;
+  if (!CanMove) return;
 
   tile = evt.currentTarget;
 
@@ -499,7 +501,8 @@ const checkWin = () => {
       scalar: 1.5,
     });
 
-    IsPlaying = false;
+    IsSolved = true;
+    CanMove = false;
   }
 };
 
@@ -507,7 +510,7 @@ const closeDialogs = () => {
   MapDialog  .classList.remove('visible');
   HelpDialog .classList.remove('visible');
   CloseButton.classList.remove('visible');
-  IsPlaying = true;
+  if (!IsSolved) CanMove = true;
 };
 
 window.onload = initApp;
