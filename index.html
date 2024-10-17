@@ -112,18 +112,13 @@ a {
   font-weight: bold;
 }
 
-.dialog,
-#close-button {
+.dialog {
   transition:
     left 0.25s ease-out,
     top  0.25s ease-out;
-}
-
-.dialog {
   font-size: 48px;
   background-color: #4f4444;
 }
-
 .landscape .dialog {
   top: -1096px;
   left: 0;
@@ -132,12 +127,22 @@ a {
   top: 0;
   left: -1096px;
 }
-
 .dialog.visible {
   top: 0;
   left: 0;
 }
+@media (max-width: 720px) {
+  .dialog {
+    font-size: 72px;
+  }
+}
 
+#close-button {
+  transition:
+    left      0.25s ease-out,
+    top       0.25s ease-out,
+    transform 0.25s ease-out;
+}
 .landscape #close-button {
   top: -124px;
   left: 24px;
@@ -146,14 +151,20 @@ a {
   top: 24px;
   left: -124px;
 }
-
 #close-button.visible {
   top: 24px;
   left: 24px;
+  transform: rotate(90deg);
 }
 
 .dialog strong {
+  margin-bottom: 24px;
   font-size: 72px;
+}
+@media (max-width: 720px) {
+  .dialog strong {
+    font-size: 96px;
+  }
 }
 
 .dialog p {
@@ -163,15 +174,22 @@ a {
 #map-dialog {
   display: flex;
   flex-direction: column;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  text-align: center;
+  box-sizing: border-box;
+}
+.landscape #map-dialog {
+  padding: 24px 72px 24px 148px;
+}
+.portrait #map-dialog {
+  padding: 148px 24px 72px 24px;
 }
 
 #map-list {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -180,11 +198,12 @@ a {
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
-  margin: 8px;
+  margin-top: 8px;
   padding: 16px;
   width: 256px;
   height: 128px;
   border-radius: 16px;
+  text-align: center;
   font-size: 56px;
   line-height: 48px;
   background-color: #fea2;
@@ -206,6 +225,11 @@ a {
 .created {
   font-size: 32px;
 }
+@media (max-width: 720px) {
+  .created {
+    font-size: 48px;
+  }
+}
 </style>
 </head>
 <body>
@@ -221,10 +245,13 @@ a {
   <div id="help-dialog" class="dialog">
     <strong>OSM 15 Puzzle</strong>
     <p>
-      This is the classic <a href="https://en.wikipedia.org/wiki/15_puzzle">15 puzzle</a> game using standard OpenStreetMap tiles.<br>
+      This is the classic <a href="https://en.wikipedia.org/wiki/15_puzzle">15 puzzle</a>
+      game using standard <a href="https://www.openstreetmap.org">OpenStreetMap</a> tiles.
       Solve the puzzle by sliding the pieces to create the original map image.
     </p>
-    <p>Move pieces by clicking or tapping on them.<br>If you have a keyboard, you may also use the arrow keys.</p>
+    <p>
+      Move pieces by clicking or tapping on them.
+      If you have a keyboard, you may also use the arrow keys.</p>
     <p class="created">
       Created by <a href="https://en.osm.town/@seav">Eugene Alvin Villar</a> •
       <a href="https://github.com/seav/osm-15-puzzle">Source code in GitHub</a>
@@ -256,11 +283,11 @@ const MAPS = {
   frisco   : { z0: 13, x0:   1308, y0:   3165, space: 'SE', title: 'San Francisco' },
   barcelona: { z0: 14, x0:   8289, y0:   6118, space: 'SE', title: 'Barcelona' },
   london   : { z0: 14, x0:   8185, y0:   5447, space: 'SE', title: 'London' },
-  schiphol : { z0: 14, x0:   8407, y0:   5387, space: 'SE', title: 'Schiphol [AMS]' },
-  haneda   : { z0: 15, x0:  29105, y0:  12916, space: 'SW', title: 'Haneda [HND]' },
+  schiphol : { z0: 14, x0:   8407, y0:   5387, space: 'SE', title: 'Schiphol [ams]' },
+  haneda   : { z0: 15, x0:  29105, y0:  12916, space: 'SW', title: 'Haneda [hnd]' },
   paris    : { z0: 15, x0:  16596, y0:  11271, space: 'NW', title: 'Paris' },
-  pentagon : { z0: 18, x0:  74960, y0: 100305, space: 'SE', title: 'Pentagon' },
-  moma     : { z0: 18, x0:  77212, y0:  98495, space: 'SE', title: 'MoMa New York' },
+  pentagon : { z0: 18, x0:  74960, y0: 100305, space: 'SE', title: 'The Pentagon' },
+  moma     : { z0: 18, x0:  77212, y0:  98495, space: 'SE', title: 'MoMA New York City' },
   shibuya  : { z0: 19, x0: 465597, y0: 206491, space: 'NE', title: 'Shibuya Station' },
   stpeters : { z0: 19, x0: 280279, y0: 194814, space: 'NE', title: 'St. Peter’s Basilica' },
 };
